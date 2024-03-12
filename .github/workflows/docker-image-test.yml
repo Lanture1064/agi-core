@@ -1,0 +1,25 @@
+name: Docker Image CI
+
+on:
+  pull_request:
+    branches: [ "test" ]
+  workflow_dispatch:
+
+env:
+  PYTHON_INDEX_URL: https://pypi.org/simple 
+  PACKAGE_REGISTRY: deb.debian.org
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Pull image
+      run: docker pull kubeagi/core-library-cli:v0.0.1
+    - name: Run image
+      run: docker run -d --name test kubeagi/core-library-cli:v0.0.1
+    - name: Get log
+      run: timeout 60 docker logs test
