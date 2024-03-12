@@ -1,25 +1,37 @@
-name: Docker Image CI
+name: Capture Container Logs
 
 on:
-  pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
-
-env:
-  PYTHON_INDEX_URL: https://pypi.org/simple 
-  PACKAGE_REGISTRY: deb.debian.org
 
 jobs:
 
-  build:
-
+  capture-logs:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - uses: actions/checkout@v3
-    - name: Pull image
-      run: docker pull kubeagi/core-library-cli:v0.0.1
-    - name: Run image
-      run: docker run -d --name test kubeagi/core-library-cli:v0.0.1
-    - name: Get log
-      run: timeout 60 docker logs test
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker
+      uses: docker-practice/actions-setup-docker@master
+
+    - name: Run Docker container
+      run: |
+        # Replace with your actual container run command
+        CONTAINER_ID=$(docker run -d kubeagi/core-library-cli:v0.0.1)
+        echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+
+    - name: Capture logs
+      id: capture-logs
+      run: |
+        DURATION=60  # Duration in seconds
+        LOG_FILE="container_logs.txt"
+        timeout $DURATION docker logs --since=$$(date +%s) -f $CONTAINER_ID > $LOG_FILE
+        echo "log_file=$LOG_FILE" >> $GITHUB_OUTPUT
+
+    - name: Upload logs
+      uses: actions/upload-artifact@v3
+      with:
+        name: container-logs
+        path: ${{ steps.capture-logs.outputs.log_file }}
